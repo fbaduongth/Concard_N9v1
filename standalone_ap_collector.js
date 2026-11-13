@@ -331,11 +331,11 @@ function loadAppConfig() {
     },
     apCredentials: {
       sshUsername: 'admin',
-      sshPasswords: [],
+      sshPasswords: ['admin'],
       totolinkWebUsername: 'admin',
-      totolinkWebPasswords: [],
+      totolinkWebPasswords: ['admin'],
       perApPasswords: {},
-      defaultSsidFallback: 'WiFi'
+      defaultSsidFallback: 'ConCard_WiFi'
     },
     grafanaSync: {
       enabled: false,
@@ -375,7 +375,22 @@ function loadAppConfig() {
         }
       });
     } else {
-      console.warn('[Config] CANH BAO: Khong tim thay file cau hinh tai ' + CONFIG_FILE);
+      var exampleCfgPath = path.join(__dirname, 'config.example.json');
+      if (fs.existsSync(exampleCfgPath)) {
+        fs.copyFileSync(exampleCfgPath, CONFIG_FILE);
+        var rawEx = fs.readFileSync(CONFIG_FILE, 'utf8').replace(/^\uFEFF/, '');
+        var parsedEx = JSON.parse(rawEx);
+        ['server', 'ui', 'network', 'apCredentials', 'grafanaSync', 'rfOptimizer'].forEach(function (sec) {
+          if (parsedEx[sec] && typeof parsedEx[sec] === 'object') {
+            Object.keys(parsedEx[sec]).forEach(function (k) {
+              defaults[sec][k] = parsedEx[sec][k];
+            });
+          }
+        });
+      } else {
+        fs.writeFileSync(CONFIG_FILE, JSON.stringify(defaults, null, 2), 'utf8');
+      }
+      console.log('[Config] Da tu dong khoi tao file config.json mac dinh.');
     }
   } catch (e) {
     console.error('[Config] Loi doc config.json, su dung gia tri mac dinh:', e.message);
@@ -5165,12 +5180,27 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
+function isDefaultFirstRunAdmin() {
+  try {
+    var st = loadUsersStore(false);
+    var defaultMd5 = md5Hash('Concard@2026');
+    for (var i = 0; i < (st.users || []).length; i++) {
+      var u = st.users[i];
+      if (u && u.username.toLowerCase() === 'admin' && u.passwordMd5 === defaultMd5) {
+        return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
 function renderLoginHtml() {
   var uiCfg = appConfig.ui || {};
   var pageTitle = escapeHtml(uiCfg.pageTitle || 'ConCard AP Monitor v1.1');
   var brandTitle = escapeHtml(uiCfg.brandTitle || 'ConCard AP Monitor');
   var versionTag = escapeHtml(uiCfg.versionTag || 'v1.1');
   var subtitle = escapeHtml(uiCfg.subtitle || 'Hệ thống giám sát & tối ưu Access Point');
+  var showFirstRunHint = isDefaultFirstRunAdmin();
 
   return '<!DOCTYPE html>' +
   '<html lang="vi"><head><meta charset="utf-8">' +
@@ -5269,6 +5299,12 @@ function renderLoginHtml() {
   '    <p class="login-sub">' + subtitle + '</p>' +
   '  </div>' +
   '  <form class="login-body" onsubmit="submitLogin(event)">' +
+  (showFirstRunHint
+    ? '    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:16px;padding:10px 12px;border-radius:8px;background:var(--blue-bg);border:1px solid var(--blue-border);color:var(--text-secondary);font-size:12px;line-height:1.45;">' +
+      '      <div><b style="color:var(--blue);">Khởi chạy lần đầu:</b> Tài khoản <code>admin</code> / <code>Concard@2026</code></div>' +
+      '      <button type="button" onclick="document.getElementById(\'loginUsername\').value=\'admin\';document.getElementById(\'loginPassword\').value=\'Concard@2026\';" style="border:1px solid var(--blue-border);background:#ffffff;color:var(--blue);font-weight:700;font-size:11px;padding:4px 8px;border-radius:6px;cursor:pointer;white-space:nowrap;">Điền nhanh</button>' +
+      '    </div>'
+    : '') +
   '    <div id="loginErrorBox" class="err-box"><i class="fi fi-rr-triangle-warning" style="margin-top:2px;flex-shrink:0;"></i><span id="loginErrorText"></span></div>' +
   '    <div class="field-group">' +
   '      <label class="field-label" for="loginUsername">Tên đăng nhập</label>' +
@@ -6812,6 +6848,44 @@ function renderHtmlDashboard(currentUser) {
   '      btn.disabled = false; btn.innerHTML = \'<i class="fi fi-rr-search"></i> Quét Ngay\';' +
   '    });' +
   '  }' +
+  '  function saveApCredentials() {' +
+  '    if (!IS_ADMIN) return;' +
+  '    var uEl = document.getElementById("apCredUserInput");' +
+  '    var pEl = document.getElementById("apCredPassInput");' +
+  '    var sEl = document.getElementById("apCredSsidInput");' +
+  '    var btn = document.getElementById("saveApCredBtn");' +
+  '    var uname = uEl ? uEl.value.trim() : "admin";' +
+  '    var pwRaw = pEl ? pEl.value.trim() : "";' +
+  '    var ssidDef = sEl ? sEl.value.trim() : "";' +
+  '    if (!uname) {' +
+  '      showPanelFeedback("apCredStatusMsg", "err", "Vui lòng nhập tên tài khoản quản trị AP (mặc định: admin).", 7000);' +
+  '      return;' +
+  '    }' +
+  '    if (btn) { btn.disabled = true; btn.innerHTML = \'<i class="fi fi-rr-spinner fi-spin"></i> Đang lưu...\'; }' +
+  '    fetch("/api/ap-credentials", {' +
+  '      method: "POST",' +
+  '      headers: { "Content-Type": "application/json" },' +
+  '      body: JSON.stringify({ username: uname, passwords: pwRaw, defaultSsid: ssidDef })' +
+  '    }).then(checkAuthJson).then(function(data){' +
+  '      if (!data || !data.success) {' +
+  '        if (btn) { btn.disabled = false; btn.innerHTML = \'<i class="fi fi-rr-disk"></i> Lưu Tài Khoản AP\'; }' +
+  '        showPanelFeedback("apCredStatusMsg", "err", escText((data && data.error) || "Không thể lưu tài khoản AP"), 8000);' +
+  '        return;' +
+  '      }' +
+  '      if (pEl) pEl.value = "";' +
+  '      var badge = document.getElementById("apPassCountBadge");' +
+  '      if (badge && typeof data.passwordCount === "number") badge.textContent = data.passwordCount + " mật khẩu đã cấu hình";' +
+  '      showPanelFeedback("apCredStatusMsg", "ok", "Đã lưu cấu hình tài khoản AP vào <b>config.json</b> &amp; tự động đồng bộ lại thiết bị trực tuyến!", 9000);' +
+  '      fetchLiveSnapshot(false);' +
+  '      if (btn) {' +
+  '        btn.innerHTML = \'<i class="fi fi-rr-check-circle"></i> Đã lưu!\';' +
+  '        setTimeout(function(){ btn.disabled = false; btn.innerHTML = \'<i class="fi fi-rr-disk"></i> Lưu Tài Khoản AP\'; }, 1200);' +
+  '      }' +
+  '    }).catch(function(err){' +
+  '      if (btn) { btn.disabled = false; btn.innerHTML = \'<i class="fi fi-rr-disk"></i> Lưu Tài Khoản AP\'; }' +
+  '      showPanelFeedback("apCredStatusMsg", "err", "Lỗi kết nối máy chủ: " + escText(err.message), 8000);' +
+  '    });' +
+  '  }' +
   '  function deleteSingleAp(btnEl) {' +
   '    if (!btnEl || !IS_ADMIN) return;' +
   '    var apKey = btnEl.getAttribute("data-key") || "";' +
@@ -8247,6 +8321,27 @@ function renderHtmlDashboard(currentUser) {
   '              <div id="scanStatusMsg" class="panel-feedback"></div>' +
   '            </div>' +
   '          </div>' +
+  '        </div>' +
+  '        <div class="config-panel" style="margin-bottom:16px;">' +
+  '          <div>' +
+  '            <div class="panel-header">' +
+  '              <div class="panel-title"><i class="fi fi-rr-key" style="color:var(--blue);"></i> Tài Khoản Quản Trị Thiết Bị AP (TOTOLINK Web / SSH)</div>' +
+  '              <span id="apPassCountBadge" class="panel-badge">' + TOTOLINK_PASSWORDS.length + ' mật khẩu đã cấu hình</span>' +
+  '            </div>' +
+  '            <p class="panel-desc">Cấu hình trực tiếp tài khoản &amp; mật khẩu đăng nhập thiết bị TOTOLINK N9v1 (lưu vào <code>config.json</code>, hỗ trợ nhập nhiều mật khẩu cách nhau dấu phẩy):</p>' +
+  '          </div>' +
+  '          <div>' +
+  '            <div class="form-row" style="flex-wrap:wrap;gap:8px;">' +
+  '              <input id="apCredUserInput" class="form-input" type="text" style="flex:0 1 130px;min-width:110px;" value="' + escapeHtml(TOTOLINK_WEB_USER || 'admin') + '" placeholder="User AP (admin)" title="Tên tài khoản quản trị AP (mặc định: admin)" />' +
+  '              <div style="position:relative;flex:1 1 260px;min-width:210px;display:flex;">' +
+  '                <input id="apCredPassInput" class="form-input" type="password" style="width:100%;padding-right:34px;" placeholder="Nhập mật khẩu AP mới (bỏ trống nếu giữ nguyên)..." autocomplete="new-password" onkeydown="if(event.key===\'Enter\')saveApCredentials()" />' +
+  '                <button type="button" onclick="togglePwdVis(\'apCredPassInput\',\'apCredPassEye\')" style="position:absolute;right:6px;top:50%;transform:translateY(-50%);border:none;background:transparent;color:var(--text-dim);cursor:pointer;padding:4px;" title="Hiện/Ẩn mật khẩu"><i id="apCredPassEye" class="fi fi-rr-eye"></i></button>' +
+  '              </div>' +
+  '              <input id="apCredSsidInput" class="form-input" type="text" style="flex:0 1 175px;min-width:140px;" value="' + escapeHtml(DEFAULT_SSID_FALLBACK || 'ConCard_WiFi') + '" placeholder="SSID mặc định" title="Tên SSID dự phòng hiển thị khi chưa đọc được từ AP" />' +
+  '              <button id="saveApCredBtn" type="button" class="btn-submit btn-blue" onclick="saveApCredentials()"><i class="fi fi-rr-disk"></i> Lưu Tài Khoản AP</button>' +
+  '            </div>' +
+  '            <div id="apCredStatusMsg" class="panel-feedback"></div>' +
+  '          </div>' +
   '        </div>'
   ) : '') +
   '        <div class="rf-banner-card" style="margin-bottom:0;">' +
@@ -8703,6 +8798,59 @@ var server = http.createServer(function (req, res) {
     var uStoreList = loadUsersStore(false);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ success: true, users: formatUsersForApi(uStoreList.users) }));
+    return;
+  } else if (parsedUrl.pathname === '/api/ap-credentials' && req.method === 'POST') {
+    if (!requireApiAuth(req, res, true)) return;
+    var bodyApCred = '';
+    req.on('data', function (c) { bodyApCred += c; });
+    req.on('end', function () {
+      try {
+        var pAp = bodyApCred ? JSON.parse(bodyApCred) : {};
+        if (!appConfig.apCredentials || typeof appConfig.apCredentials !== 'object') {
+          appConfig.apCredentials = {};
+        }
+        var newU = String(pAp.username || 'admin').trim() || 'admin';
+        var newSsid = String(pAp.defaultSsid || '').trim();
+        var rawPass = String(pAp.passwords || '').trim();
+        appConfig.apCredentials.totolinkWebUsername = newU;
+        appConfig.apCredentials.sshUsername = newU;
+        TOTOLINK_WEB_USER = newU;
+        SSH_USER = newU;
+        if (newSsid) {
+          appConfig.apCredentials.defaultSsidFallback = newSsid;
+          DEFAULT_SSID_FALLBACK = newSsid;
+        }
+        if (rawPass) {
+          var pwList = [];
+          rawPass.split(',').forEach(function (seg) {
+            var cleanPw = seg.trim();
+            if (cleanPw && pwList.indexOf(cleanPw) === -1) pwList.push(cleanPw);
+          });
+          if (pwList.length > 0) {
+            appConfig.apCredentials.totolinkWebPasswords = pwList.slice();
+            appConfig.apCredentials.sshPasswords = pwList.slice();
+            TOTOLINK_PASSWORDS = pwList.slice();
+            SSH_PASSWORDS = pwList.slice();
+          }
+        }
+        sshSessionPassCache = {};
+        totolinkWebPassCache = {};
+        totolinkWebCookieCache = {};
+        saveAppConfig();
+        setTimeout(function () { pollAllRealApStats(); }, 150);
+        scheduleRealtimeBroadcast(200);
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        res.end(JSON.stringify({
+          success: true,
+          username: TOTOLINK_WEB_USER,
+          defaultSsid: DEFAULT_SSID_FALLBACK,
+          passwordCount: TOTOLINK_PASSWORDS.length
+        }));
+      } catch (errApCred) {
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ success: false, error: errApCred.message }));
+      }
+    });
     return;
   } else if (parsedUrl.pathname === '/api/users/create' && req.method === 'POST') {
     if (!requireApiAuth(req, res, true)) return;
@@ -9319,6 +9467,9 @@ server.listen(PORT, function () {
   console.log('[INFO] File cau hinh:      ' + CONFIG_FILE);
   console.log('[INFO] Quan ly nguoi dung: ' + USERS_FILE + ' (' + initUsersStore.users.length + ' tai khoan, MD5)');
   console.log('[INFO] Dashboard Web:      http://localhost:' + PORT + '/');
-  console.log('[INFO] IP Co Dinh Quan Ly: ' + staticIpsList.join(', '));
+  if (isDefaultFirstRunAdmin()) {
+    console.log('[INFO] Dang nhap lan dau:  admin / Concard@2026');
+  }
+  console.log('[INFO] IP Co Dinh Quan Ly: ' + (staticIpsList.length > 0 ? staticIpsList.join(', ') : '(Chua khai bao - them trong muc Cai dat)'));
   console.log('====================================================');
 });

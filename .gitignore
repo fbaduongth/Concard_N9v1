@@ -8,6 +8,8 @@ askpass.bat
 *.db
 *.log
 
-# Node.js Portable Binary (đính kèm trong gói Release Portable ZIP)
+# File node.exe sau khi tự giải nén từ runtime/node_portable.zip
 runtime/node.exe
+!runtime/node_portable.zip
+!runtime/RUNTIME_GUIDE.md
 node_modules/

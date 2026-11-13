@@ -78,34 +78,37 @@ Phân tách rõ quyền quản trị toàn diện (`Admin`) và quyền giám s�
 
 ---
 
-## 4. Hướng Dẫn Cài Đặt
+## 4. Hướng Dẫn Cài Đặt (Chạy Ngay Không Cần Cài Đặt Node.js)
 
 ### Yêu cầu hệ thống
-- **Hệ điều hành:** Windows 10 / 11 hoặc Windows Server 2016 / 2019 / 2022 (có thể chạy trên Linux với Node.js).
+- **Hệ điều hành:** Windows 10 / 11 hoặc Windows Server 2016 / 2019 / 2022 (cũng tương thích Linux nếu chạy qua `node`).
 - **Mạng:** Máy chạy phần mềm có kết nối mạng LAN/VLAN nhìn thấy (route/ping được) tới các thiết bị Access Point TOTOLINK N9 / N9v1.
 - **Cổng mặc định:** `TCP 9100` (có thể tùy chỉnh trong `config.json`).
 
-### Cách 1: Sử dụng bản Đóng gói Portable trên Windows (Khuyên dùng — Chạy ngay không cần cài đặt)
-1. Vào mục **[Releases](https://github.com/fbaduongth/Concard_N9v1/releases)** của kho lưu trữ và tải gói `Concard_N9v1_v1.1_Portable.zip`.
-2. Giải nén vào thư mục bất kỳ trên máy chủ (ví dụ `C:\Concard_N9v1`).
-3. Mở file `config.json` để cập nhật mật khẩu đăng nhập thiết bị AP TOTOLINK thực tế của bạn *(xem Mục 5 bên dưới)*.
-4. Nhấp đúp chạy file **`start_collector.bat`**.
-5. Mở trình duyệt truy cập: **http://localhost:9100/**.
+### Cách 1: Tải trực tiếp Mã nguồn (`Code -> Download ZIP` / `git clone`) — Sử dụng ngay lập tức!
+Kho mã nguồn đã tích hợp sẵn gói **`runtime/node_portable.zip`** (Node.js LTS Portable Offline), icon giao diện và 40.467 mã OUI:
+1. Nhấn nút xanh **`<> Code → Download ZIP`** trên GitHub (hoặc chạy `git clone https://github.com/fbaduongth/Concard_N9v1.git`) và giải nén ra máy tính bất kỳ.
+2. Nhấp đúp chạy file **`start_collector.bat`**.
+   - Ở lần chạy đầu tiên (~2 giây), phần mềm **tự động giải nén Offline** `runtime/node.exe` ngay tại chỗ (không cần Internet, không cần cài Node.js) và **tự động mở trình duyệt** tới **http://localhost:9100/**.
+3. Đăng nhập lần đầu với tài khoản mặc định **`admin` / `Concard@2026`** (có nút **Điền nhanh** ngay trên màn hình đăng nhập).
 
-### Cách 2: Chạy từ Mã nguồn với Node.js cài sẵn
-Nếu máy tính đã cài sẵn [Node.js](https://nodejs.org/) (phiên bản bất kỳ từ `v12+` / `v18+` / `v20+` / `v22+`):
-```bash
-git clone https://github.com/fbaduongth/Concard_N9v1.git
-cd Concard_N9v1
-# Chỉnh sửa mật khẩu AP trong file config.json trước khi chạy
-node standalone_ap_collector.js
-```
+### Cách 2: Tải gói Release Portable hoặc chạy bằng Node.js hệ thống
+- **Bản Release Portable:** Tải file `Concard_N9v1_v1.1_Portable.zip` tại mục **[Releases](https://github.com/fbaduongth/Concard_N9v1/releases)**, giải nén và chạy `start_collector.bat`.
+- **Chạy qua CLI / Linux:** Nếu máy đã cài sẵn Node.js (`v12+` trở lên), chạy trực tiếp lệnh `node standalone_ap_collector.js`.
 
 ---
 
-## 5. Cấu Hình Mật Khẩu AP & Thông Số Mạng (`config.json`)
+## 5. Cấu Hình Mật Khẩu Thiết Bị AP (Trực Tiếp Trên Web Hoặc `config.json`)
 
-> **Quan trọng về bảo mật:** Trước khi vận hành thực tế, hãy mở file `config.json` bằng Notepad / VS Code và thay các mật khẩu mẫu trong mục `apCredentials` bằng tài khoản & mật khẩu quản trị thực tế của dàn thiết bị **TOTOLINK N9 / N9v1** trong mạng của bạn.
+Mặc định phần mềm để sẵn tài khoản xuất xưởng của TOTOLINK N9v1 là `admin` / `admin`. Nếu dàn AP thực tế của bạn đã đổi sang mật khẩu riêng, bạn có thể cập nhật theo **1 trong 2 cách**:
+
+### Cách A — Cấu hình trực tiếp trên Giao diện Web (Khuyên dùng)
+1. Đăng nhập với quyền `Admin` → Nhấn nút **Cài đặt** ở góc phải trên cùng.
+2. Tại khung **Tài Khoản Quản Trị Thiết Bị AP (TOTOLINK Web / SSH)**: nhập tài khoản, mật khẩu quản trị AP của bạn (nếu có nhiều lô AP khác mật khẩu, nhập cách nhau bằng dấu phẩy `,`) và tên SSID mặc định → nhấn **Lưu Tài Khoản AP**.
+3. Hệ thống tự động lưu vào `config.json` và đồng bộ lại toàn bộ thiết bị trực tuyến ngay lập tức.
+
+### Cách B — Chỉnh sửa trực tiếp file `config.json` (Tự động Hot-reload)
+Mở file `config.json` bằng Notepad / VS Code để cấu hình nâng cao (như dải mạng mặc định hoặc mật khẩu riêng cho từng IP tại `perApPasswords`):
 
 ```json
 "network": {
@@ -130,8 +133,7 @@ node standalone_ap_collector.js
 }
 ```
 
-- Hệ thống hỗ trợ **danh sách nhiều mật khẩu dự phòng** (`totolinkWebPasswords` / `sshPasswords`) trong trường hợp các lô AP trong tòa nhà dùng nhiều mật khẩu khác nhau, hoặc khai báo mật khẩu riêng cho từng IP/MAC tại `perApPasswords`.
-- Mọi chỉnh sửa và lưu trên file `config.json` sẽ được phần mềm **tự động nhận diện và nạp nóng (Hot-reload)** ngay lập tức mà không cần tắt bật lại dịch vụ.
+- Mọi chỉnh sửa và lưu trên file `config.json` đều được phần mềm **tự động nhận diện và nạp nóng (Hot-reload)** mà không cần tắt bật lại dịch vụ.
 
 ---
 
@@ -182,7 +184,8 @@ Concard_N9v1/
 ├── docs/
 │   └── screenshots/                     # Ảnh chụp màn hình giao diện & tính năng phần mềm
 ├── runtime/
-│   └── RUNTIME_GUIDE.md                 # Hướng dẫn đặt node.exe Portable (có sẵn trong bản ZIP)
+│   ├── node_portable.zip                # Node.js Portable đóng gói sẵn (tự bung Offline lần chạy đầu)
+│   └── RUNTIME_GUIDE.md                 # Cơ chế tự động nhận diện & giải nén Node.js Portable
 ├── standalone_ap_collector.js           # Nhân phần mềm: Collector, Web UI, RF 24h, Auth & Prometheus API
 ├── config.json                          # File cấu hình hệ thống & mật khẩu AP (tự động Hot-reload)
 ├── config.example.json                  # File cấu hình mẫu tham khảo

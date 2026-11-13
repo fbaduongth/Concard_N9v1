@@ -45,13 +45,11 @@
   "apCredentials": {
     "sshUsername": "admin",
     "sshPasswords": [
-      "CHANGE_ME_AP_SSH_PASSWORD",
-      "totolink@password"
+      "admin"
     ],
     "totolinkWebUsername": "admin",
     "totolinkWebPasswords": [
-      "CHANGE_ME_AP_WEB_PASSWORD",
-      "totolink@password"
+      "admin"
     ],
     "perApPasswords": {},
     "defaultSsidFallback": "ConCard_WiFi"
@@ -63,7 +61,7 @@
     "datasourceUid": "YOUR_PROMETHEUS_DATASOURCE_UID",
     "dashboardUid": "totolink-network-ap-v1",
     "username": "admin",
-    "password": "CHANGE_ME_GRAFANA_PASSWORD",
+    "password": "",
     "syncIntervalMs": 60000
   },
   "rfOptimizer": {

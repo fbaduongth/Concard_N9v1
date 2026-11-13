@@ -8,18 +8,32 @@ echo ====================================================================
 echo.
 
 set "NODE_EXE=%~dp0runtime\node.exe"
+set "NODE_ZIP=%~dp0runtime\node_portable.zip"
+
+if not exist "%NODE_EXE%" (
+    if exist "%NODE_ZIP%" (
+        echo [INFO] Khoi chay lan dau: Dang giai nen Node.js Portable di kem ^(Offline^)...
+        tar -xf "%NODE_ZIP%" -C "%~dp0runtime" >nul 2>&1
+        if not exist "%NODE_EXE%" (
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "Expand-Archive -LiteralPath '%NODE_ZIP%' -DestinationPath '%~dp0runtime' -Force" >nul 2>&1
+        )
+        if exist "%NODE_EXE%" (
+            echo [OK] Da san sang Node.js Portable tai: %NODE_EXE%
+        )
+    )
+)
 
 if not exist "%NODE_EXE%" (
     where node >nul 2>&1
     if not errorlevel 1 (
-        echo [INFO] Su dung Node.js he thong...
+        echo [INFO] Su dung Node.js cai san tren he thong...
         set "NODE_EXE=node"
     ) else (
-        echo [INFO] Chua co Node.js tren may. Dang tu dong tai Node.js Portable LTS ^(chi 1 lan dau^)...
+        echo [INFO] Dang tai Node.js Portable LTS tu nodejs.org ^(chi 1 lan dau^)...
         if not exist "%~dp0runtime" mkdir "%~dp0runtime"
         powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.14.0/win-x64/node.exe' -OutFile '%~dp0runtime\node.exe' -UseBasicParsing"
         if not exist "%NODE_EXE%" (
-            echo [LOI] Khong the tai tu dong Node.js Portable. Vui long kiem tra ket noi Internet hoac giai nen ban Portable ZIP trong muc Releases.
+            echo [LOI] Khong tim thay Node.js Portable va khong the tai tu dong.
             pause
             exit /b 1
         )
@@ -36,8 +50,12 @@ for /f "tokens=5" %%p in ('netstat -ano ^| findstr /r /c:":9100 .*LISTENING"') d
     taskkill /F /PID %%p >nul 2>&1
 )
 
+if /i not "%~1"=="--no-browser" (
+    start "" /b cmd /c "ping 127.0.0.1 -n 3 >nul & start http://localhost:9100/"
+)
+
 echo [INFO] Runtime Node.js:  %NODE_EXE%
-echo [INFO] Dang khoi chay Collector...
+echo [INFO] Dang khoi chay Collector ^(trinh duyet se tu dong mo http://localhost:9100/^)...
 echo.
 "%NODE_EXE%" standalone_ap_collector.js
 
