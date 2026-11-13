@@ -15,9 +15,15 @@ if not exist "%NODE_EXE%" (
         echo [INFO] Su dung Node.js he thong...
         set "NODE_EXE=node"
     ) else (
-        echo [LOI] Khong tim thay Node.js Portable tai: %NODE_EXE%
-        pause
-        exit /b 1
+        echo [INFO] Chua co Node.js tren may. Dang tu dong tai Node.js Portable LTS ^(chi 1 lan dau^)...
+        if not exist "%~dp0runtime" mkdir "%~dp0runtime"
+        powershell -NoProfile -ExecutionPolicy Bypass -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://nodejs.org/dist/v22.14.0/win-x64/node.exe' -OutFile '%~dp0runtime\node.exe' -UseBasicParsing"
+        if not exist "%NODE_EXE%" (
+            echo [LOI] Khong the tai tu dong Node.js Portable. Vui long kiem tra ket noi Internet hoac giai nen ban Portable ZIP trong muc Releases.
+            pause
+            exit /b 1
+        )
+        echo [OK] Da tai thanh cong Node.js Portable tai: %NODE_EXE%
     )
 )
 
