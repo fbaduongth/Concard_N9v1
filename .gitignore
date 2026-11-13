@@ -1,0 +1,13 @@
+# Dữ liệu trạng thái & bảo mật phát sinh khi vận hành (Runtime State)
+users.json
+aps_registry.json
+rf_telemetry_24h.json
+clients_identity_cache.json
+dashboard_current.json
+askpass.bat
+*.db
+*.log
+
+# Node.js Portable Binary (đính kèm trong gói Release Portable ZIP)
+runtime/node.exe
+node_modules/

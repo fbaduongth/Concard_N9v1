@@ -1,0 +1,88 @@
+{
+  "server": {
+    "port": 9100,
+    "pingIntervalMs": 4000,
+    "autoRescanIntervalMs": 30000,
+    "apPollIntervalMs": 12000
+  },
+  "ui": {
+    "pageTitle": "ConCard AP Monitor v1.1",
+    "brandTitle": "ConCard AP Monitor",
+    "versionTag": "v1.1",
+    "subtitle": "Hệ thống giám sát & tối ưu Access Point TOTOLINK N9",
+    "showMetricsButton": false
+  },
+  "network": {
+    "defaultScanTarget": "192.168.1.0/24",
+    "defaultStaticIps": [],
+    "scanPresets": [
+      {
+        "label": "Mạng LAN /24",
+        "target": "192.168.1.0/24",
+        "icon": "fi-rr-bullseye-arrow"
+      },
+      {
+        "label": "Cụm VLAN Tầng",
+        "target": "172.16.2.0/24, 172.16.3.0/24",
+        "icon": "fi-rr-rocket-lunch"
+      },
+      {
+        "label": "Toàn Mạng /21",
+        "target": "172.16.0.0/21",
+        "icon": "fi-rr-globe"
+      }
+    ],
+    "allowedMacOuis": [
+      "f4-28-53",
+      "78-44-fd",
+      "00-e0-4c",
+      "d4-ee-07",
+      "c8-3a-35",
+      "00-1e-e3",
+      "18-e8-29"
+    ]
+  },
+  "apCredentials": {
+    "sshUsername": "admin",
+    "sshPasswords": [
+      "CHANGE_ME_AP_SSH_PASSWORD",
+      "totolink@password"
+    ],
+    "totolinkWebUsername": "admin",
+    "totolinkWebPasswords": [
+      "CHANGE_ME_AP_WEB_PASSWORD",
+      "totolink@password"
+    ],
+    "perApPasswords": {},
+    "defaultSsidFallback": "ConCard_WiFi"
+  },
+  "grafanaSync": {
+    "enabled": false,
+    "host": "127.0.0.1",
+    "port": 3000,
+    "datasourceUid": "YOUR_PROMETHEUS_DATASOURCE_UID",
+    "dashboardUid": "totolink-network-ap-v1",
+    "username": "admin",
+    "password": "CHANGE_ME_GRAFANA_PASSWORD",
+    "syncIntervalMs": 60000
+  },
+  "rfOptimizer": {
+    "telemetryWindowHours": 24,
+    "neighborScanIntervalMinutes": 45,
+    "autoOptimizeEnabled": false,
+    "autoOptimizeTime": "03:30",
+    "requireFull24hForAuto": true,
+    "targetStaRssiRoomDbm": -76,
+    "targetStaRssiLobbyDbm": -75,
+    "fallbackStaRssiDbm": -80,
+    "targetDtimPeriod": 3,
+    "enableTxBurst": true,
+    "allowedChannels24G": [
+      1,
+      6,
+      11
+    ],
+    "channelCooldownHours": 24,
+    "replanMinGlobalGainPct": 18
+  }
+}
